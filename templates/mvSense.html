@@ -80,24 +80,23 @@
                 <div class="content">
                     <div class="container">
                         <div class="section">
-                            <h1><a href='https://account.meraki.com/secure/login/dashboard_login' target="_blank">MV Sense Data</a></h1>
+                            <h1><a href='https://account.meraki.com/secure/login/dashboard_login' target="_blank">Crowd events</a></h1>
+                            <h2>At least {{ numPersons }} people for more than {{ numSeconds }} seconds.</h2>
                         </div>
                       <table>
                         <thead>
                           <tr bgcolor="#7EF5FA" align="center">
-                            <th>Time In</th>
-                            <th>Time Out</th>
                             <th>Total People</th>
+                              <th>Timestamp</th>
                             <th>Video Link</th>
                           </tr>
                         </thead>
                         <tbody>
                           {% for x in data %}
                           <tr>
-                            <td>{{ x['timeIn'] }}</td>
-                            <td>{{ x['timeOut'] }}</td>
                             <td>{{ x['count'] }}</td>
-                            <td>{{ x['link'] }}</td>
+                              <td>{{ x['timeIn']}}</td>
+                            <td><a href="{{ x['link'] }}" target="_blank">Video clip</a></td>
                           {% endfor %}
 
                         </tbody>

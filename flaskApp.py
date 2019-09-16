@@ -10,7 +10,7 @@ from datetime import datetime
 from flask_googlecharts import GoogleCharts
 from flask_googlecharts import BarChart, MaterialLineChart, ColumnChart
 from flask_googlecharts.utils import prep_data
-from config import COLLECT_CAMERAS_MVSENSE_CAPABLE, NETWORK_ID
+from config import COLLECT_CAMERAS_MVSENSE_CAPABLE, NETWORK_ID, MOTION_ALERT_PEOPLE_COUNT_THRESHOLD, MOTION_ALERT_DWELL_TIME
 from compute import *
 import time
 import pytz    # $ pip install pytz
@@ -157,7 +157,6 @@ def hourFilter():
     return render_template("filterTimes.html",cmxData=cmxData)
 
 
-
 @app.route('/mvSense',methods=['GET','POST'])
 def mvSense():
     # open mv sense data
@@ -174,7 +173,7 @@ def mvSense():
             link = link.replace('"}',"")
             data.append({'timeIn':datetime.fromtimestamp(float(row['Time In'])/1000).strftime('%m-%d,%H:%M'),'timeOut':datetime.fromtimestamp(float(row['Time Out'])/1000).strftime('%m-%d,%H:%M'),'count':row['Count'],'link':link})
     # print(len(data[0]['timestamps']))
-    return render_template("mvSense.html",data=data)
+    return render_template("mvSense.html",data=data, numPersons=MOTION_ALERT_PEOPLE_COUNT_THRESHOLD, numSeconds=int(MOTION_ALERT_DWELL_TIME/1000))
 
 @app.route('/cmxActivity',methods=['GET','POST'])
 def cmxActivity():
@@ -273,7 +272,7 @@ def correlation():
 @app.route('/',methods=['GET'])
 def index():
     # this is for the GET to show the overview
-    return render_template("pleasewait.html", theReason='Getting all cameras for network: ' + NETWORK_ID)
+    return render_template("pleasewait.html", theReason='Getting crowd events for cameras on network: ' + NETWORK_ID)
 
 
 @app.route('/mvOverview',methods=['GET','POST'])

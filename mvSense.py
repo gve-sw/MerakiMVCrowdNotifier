@@ -4,7 +4,12 @@ import json, requests
 import time
 import paho.mqtt.client as mqtt
 import csv
-from config import MQTT_SERVER,MQTT_PORT,MQTT_TOPIC,MERAKI_API_KEY,NETWORK_ID,COLLECT_CAMERAS_SERIAL_NUMBERS,COLLECT_ZONE_IDS,MOTION_ALERT_PEOPLE_COUNT_THRESHOLD,MOTION_ALERT_ITERATE_COUNT,MOTION_ALERT_TRIGGER_PEOPLE_COUNT,MOTION_ALERT_PAUSE_TIME,TIMEOUT
+from config import MQTT_SERVER,MQTT_PORT,MQTT_TOPIC,MERAKI_API_KEY,NETWORK_ID,COLLECT_CAMERAS_SERIAL_NUMBERS,COLLECT_ZONE_IDS,MOTION_ALERT_PEOPLE_COUNT_THRESHOLD,MOTION_ALERT_ITERATE_COUNT,MOTION_ALERT_TRIGGER_PEOPLE_COUNT,MOTION_ALERT_PAUSE_TIME,MOTION_ALERT_DWELL_TIME,TIMEOUT
+from config import BOT_ACCESS_TOKEN, CROWD_EVENTS_MESSAGE_RECIPIENT
+from webexteamssdk import WebexTeamsAPI
+
+webexApi = WebexTeamsAPI(access_token=BOT_ACCESS_TOKEN)
+
 
 
 _MONITORING_TRIGGERED = False
@@ -16,6 +21,8 @@ _MONITORING_PEOPLE_TOTAL_COUNT = 0
 _TIMESTAMP = 0
 
 _TIMEOUT_COUNT = 0
+
+_TEST_TRIG_START=0
 
 
 
@@ -33,7 +40,7 @@ def collect_zone_information(topic, payload):
 
     # detect motion
 
-    global _MONITORING_TRIGGERED, _MONITORING_MESSAGE_COUNT, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, TIMEOUT, _TIMEOUT_COUNT
+    global _MONITORING_TRIGGERED, _MONITORING_MESSAGE_COUNT, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, TIMEOUT, _TIMEOUT_COUNT, _TEST_TRIG_START
 
     # if motion monitoring triggered
     if _MONITORING_TRIGGERED:
@@ -54,9 +61,9 @@ def collect_zone_information(topic, payload):
 # Minimum people count reached
             if _MONITORING_PEOPLE_TOTAL_COUNT >= MOTION_ALERT_TRIGGER_PEOPLE_COUNT:
                 # notification
-                print('---MESSAGE ALERT---' + serial_number, _MONITORING_PEOPLE_TOTAL_COUNT,_TIMESTAMP,payload['ts'])
-                notify(serial_number, _MONITORING_PEOPLE_TOTAL_COUNT,_TIMESTAMP, payload['ts'])
-                print('---ALERTED---')
+                #print('---MESSAGE ALERT---' + serial_number, _MONITORING_PEOPLE_TOTAL_COUNT,_TIMESTAMP,payload['ts'])
+                #notify(serial_number, _MONITORING_PEOPLE_TOTAL_COUNT,_TIMESTAMP, payload['ts'])
+                #print('---ALERTED---')
                 # pause
                 time.sleep(MOTION_ALERT_PAUSE_TIME)
 
@@ -90,11 +97,33 @@ def collect_zone_information(topic, payload):
     if payload['counts']['person'] >= MOTION_ALERT_PEOPLE_COUNT_THRESHOLD:
         _MONITORING_TRIGGERED = True
         _TIMESTAMP = payload['ts']
-    print("payload "+serial_number+": " + str(payload) +
-          ", _MONITORING_TRIGGERED : " + str(_MONITORING_TRIGGERED) +
-          ", _MONITORING_MESSAGE_COUNT : " + str(_MONITORING_MESSAGE_COUNT) +
-          ", _MONITORING_PEOPLE_TOTAL_COUNT : " + str(_MONITORING_PEOPLE_TOTAL_COUNT)+
-          ", timeout: "+str(_TIMEOUT_COUNT))
+
+    #print("payload "+serial_number+": " + str(payload) +
+    #      ", _MONITORING_TRIGGERED : " + str(_MONITORING_TRIGGERED) +
+    #      ", _MONITORING_MESSAGE_COUNT : " + str(_MONITORING_MESSAGE_COUNT) +
+    #      ", _MONITORING_PEOPLE_TOTAL_COUNT : " + str(_MONITORING_PEOPLE_TOTAL_COUNT)+
+    #      ", timeout: "+str(_TIMEOUT_COUNT))
+    print(_MONITORING_PEOPLE_TOTAL_COUNT,MOTION_ALERT_PEOPLE_COUNT_THRESHOLD)
+    if ( _MONITORING_PEOPLE_TOTAL_COUNT >= MOTION_ALERT_PEOPLE_COUNT_THRESHOLD ):
+        _TIMESTAMP = payload['ts']
+        print("Timestamp: " + str(_TIMESTAMP) + " TrigTimestamp: " + str(_TEST_TRIG_START)+" diff:"+str(_TIMESTAMP - _TEST_TRIG_START))
+        if (_TEST_TRIG_START == 0):
+            # start mesuring a dwelling period
+            _TEST_TRIG_START = payload['ts']
+        if ((_TIMESTAMP - _TEST_TRIG_START) >= MOTION_ALERT_DWELL_TIME):
+            theText=u"At least " + str(MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) + " person(s) detected for more than " + str(int(MOTION_ALERT_DWELL_TIME/1000)) + " seconds on camera "+serial_number+" for zone "+str(zone_id)
+            print(theText)
+            #send message to recipient from Webex Teams bot
+            theMessage=webexApi.messages.create(toPersonEmail=CROWD_EVENTS_MESSAGE_RECIPIENT, text=theText)
+            print(theMessage)
+
+            print('---MESSAGE ALERT---' + serial_number, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
+            notify(serial_number, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
+            print('---ALERTED---')
+            _TEST_TRIG_START = 0
+    else:
+        _TEST_TRIG_START = 0
+
 
 
 def notify(serial_number,count,timestampIN, timestampOUT):
