@@ -1,7 +1,8 @@
 # Meraki MV Crowd notifier
 
 This demo utilizes Meraki MV Sense camera data to detect when there are a number of persons (MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) in view of
-the camera for at least a specified period of time (MOTION_ALERT_DWELL_TIME)
+the camera for at least a specified period of time (MOTION_ALERT_DWELL_TIME). Upon detecting an event,
+it sends a message via Webex Teams to a recipient (CROWD_EVENTS_MESSAGE_RECIPIENT) and resets a timer to start the process over.
 
 It also implements web page that lists the crowd notification events with a URL to the video clip of when the crowds where detected.
 
@@ -38,7 +39,8 @@ Leverage Meraki new camera API and MQTT capability to create a notification serv
 12. MOTION_PAUSE_TIME is the pause time after alert finished triggering
 13. TIMEOUT is the number of messages until action times out due to in activity (will then check whether minimum alert iterate count is met to determine activity success)
 14. MOTION_ALERT_DWELL_TIME is the time in microseconds that the code should wait before determining that a crow alert should occur
-
+15. BOT_ACCESS_TOKEN is the Webex Teams bot used to send the crowd notification messages
+16. CROWD_EVENTS_MESSAGE_RECIPIENT is the email address of the Webex Teams user to send the notifications to
 
 ——------ Running Code ------—— 
 1. Make sure Python is installed
