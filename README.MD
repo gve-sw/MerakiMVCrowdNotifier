@@ -1,20 +1,14 @@
-# Meraki MV and MX Analytics Demo
+# Meraki MV Crowd notifier
 
-This demo utilizes Meraki MV Sense camera data in conjunction with Meraki CMX access point data to output human consumable information and correlations regarding activities such as number of visits, busiest times in a day, number of people etc.  Streaming data from MV sense and CMX are stored in local files and are then utilized for further analysis and formatting.  A web GUI is used to display and interact with the data with options for csv download.
+This demo utilizes Meraki MV Sense camera data to detect when there are a number of persons (MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) in view of
+the camera for at least a specified period of time (MOTION_ALERT_DWELL_TIME)
 
-It also implements a simplified dashboard that focuses on showing the number of visitors on each camera in a Network divided by zones and
-zooming into a particular zone to see hourly details and relevant camera snapshots.
-  
-  
-This application has relevant use cases for asset utilization tracking, customer activity tracking, and much more.
+It also implements web page that lists the crowd notification events with a URL to the video clip of when the crowds where detected.
 
-There are 3 main functionalities in this repository:  
+At the moment, the  **mvSense.py** python program receives streams of MV Sense data from Meraki video cameras and stores this data in mvData.csv
+and the **flaskApp.py** Flask application then analyzes and formats the data into a web application.
 
-   The **cmxreceiver.py** program receives streams of cmx data from Meraki access points and saves this data in cmxData.csv.  
-
-   The **mvSense.py** program receives streams of MV Sense data from Meraki video cameras and stores this data in mvData.csv.   
-
-   The **flaskApp.py** then utilizes functions in compute.py to analyze and format the data into a web application.  
+These will be merged into one flask application soon.
 
 
 ## Configuration
@@ -38,53 +32,12 @@ Leverage Meraki new camera API and MQTT capability to create a notification serv
 6. NETWORK_ID is Camera's network ID, will use this get video link with camera api
 7. COLLECT_CAMERAS_SERIAL_NUMBERS is the array of cameras serial numbers, for all of there cameras use *
 8. COLLECT_ZONE_IDS is Array of camera zone id, all is *
-9. MOTION_ALERT_PEOPLE_COUNT_THRESHOLD is the minimum number of people detected in camera to trigger the start of an activity
+9. MOTION_ALERT_PEOPLE_COUNT_THRESHOLD is the minimum number of people detected in camera to trigger the start of crowd notification
 10. MOTION_ALERT_ITERATE_COUNT is the minimum number of mqtt messages counted to indicate that an activity has successfully occurred
 11. MOTION_ALERT_TRIGGER_PEOPLE_COUNT is the minimum number of people needed to successfully complete and activity
 12. MOTION_PAUSE_TIME is the pause time after alert finished triggering
 13. TIMEOUT is the number of messages until action times out due to in activity (will then check whether minimum alert iterate count is met to determine activity success)
-
-
-
-——------ CMX Access point Setup ------——
-Cisco Meraki CMX Receiver is asimple example demonstrating how to interact with the CMX API.
-How it works:
-- Meraki access points will listen for WiFi clients that are searching for a network to join and log the events.
-- The "observations" are then collected temporarily in the cloud where additional information can be added to
-the event, such as GPS, X Y coordinates and additional client details.
-- Meraki will first send a GET request to this CMX receiver, which expects to receive a "validator" key that matches
-the Meraki network's validator.
-- Meraki will then send a JSON message to this application's POST URL (i.e. http://yourserver/ method=[POST])
-- The JSON is checked to ensure it matches the expected secret, version and observation device type.
-- The resulting data is sent to the "save_data(data)" function where it can be sent to a database or other service
-    - This example will simply print the CMX data to the console.
-Default port: 5000
-Cisco Meraki CMX Documentation
-https://documentation.meraki.com/MR/Monitoring_and_Reporting/CMX_Analytics#CMX_Location_API
-
-—— CMX Configuration ——
-1. In the config.py file, there is a section for “Variables utilized in cmxreceiver.py” which contains all of the config variables for the cmx data gathering code
-2. Validator is the validator key that can be found in the Meraki dashboard by navigating to **Network-wide > General
-3. Scroll down to “Location and Analytics” to copy and paste this validator key into code (ensure analytics and scanning API are enabled)
-4. _RSSI_THRESHOLD is the minimum rssi value needed for a device to be written into database (rssi is the signal strength of the device seen by the access point
-5. _APMACADDR is the MAC address of the desired access point to gather data from
-
-—— Access Point setting ——
-1. Download ngrok which is used to create public URLs for programs (more information here: https://ngrok.com)
-2. Use ngrok to expose port 5000 by entering ‘./ngrok http 5000’ into terminal
-3. You should see a url created that looks similar to this ‘https://2a6eed03.ngrok.io/'
-4. Copy and paste this url into the “Post URL” section of “Location and Analytics” in the Meraki Dashboard
-5. Note that the validate button should fail at this point as the the cmx receiver is not up and running
-
-
-
-——------ Computing Configuration ------——
-1. In the config.py file, there is a section for “Variables utilized in compute.py"
-2. _FILTER_TIME is the number of seconds in which devices will not be displayed if total time seen by cmx data is over this threshold
-3. _SESSION_TIME is the number of seconds between cmx timestamps which is still considered to be the same session of activity (as sometimes gaps in streaming data can happens but this does not necessarily mean device has left and come back)
-4. timeWindow defines a leeway period before inTime and after outTime of mvSense data in which cmx data should still be considered, as the times may not exactly match up due to granularity differences
-5. rssiThreshold defines minimum signal strength to be considered in correlation with mvSense data and cmx data
-
+14. MOTION_ALERT_DWELL_TIME is the time in microseconds that the code should wait before determining that a crow alert should occur
 
 
 ——------ Running Code ------—— 
@@ -92,7 +45,5 @@ https://documentation.meraki.com/MR/Monitoring_and_Reporting/CMX_Analytics#CMX_L
 2. Make sure pip is installed (https://pip.pypa.io/en/stable/installing/ for more information on pip)
 3. Enter 'pip install -r requirements.txt' into command line to download necessary libraries
 4. Ensure all elements of the config.py file are completed
-5. Ensure ngrok is running and that the url matches what is in the Meraki Dashboard (./ngrok http 5000)
-6. In a new terminal window, enter ‘python3.7 cmxreceiver.py’ (note at this point the validate button in the Meraki dashboard should be working, data will stream every minute or so)
-7. In a new terminal window, enter ‘python3.7 mvSense.py’ (connection should be made with MQTT server and data should start streaming)
-8. To run the flask application, enter ‘python flaskApp.py’ in another terminal window and navigate your browser to the given url address (http://0.0.0.0:5001)
+5. In a new terminal window, enter ‘python3.7 mvSense.py’ (connection should be made with MQTT server and data should start streaming)
+6. To run the flask application, enter ‘python flaskApp.py’ in another terminal window and navigate your browser to the given url address (http://0.0.0.0:5001)
