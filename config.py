@@ -3,6 +3,11 @@
 MERAKI_API_KEY = ""
 NETWORK_ID = ""
 
+# ------------ Variables for Webex Teams bot notification -------------------------
+BOT_ACCESS_TOKEN = "XXXXX"
+
+CROWD_EVENTS_MESSAGE_RECIPIENT="test@acme.com"
+
 # ------------Variables utilized in mvSense.py-----------------------------------
 MQTT_SERVER = "test.mosquitto.org"
 #MQTT_SERVER = "MQTT_IP_DOMAIN"
