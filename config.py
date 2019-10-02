@@ -3,11 +3,19 @@
 MERAKI_API_KEY = ""
 NETWORK_ID = ""
 
+# ------------ Variables for Webex Teams bot notification -------------------------
+BOT_ACCESS_TOKEN = "ZWNiNTcyNWYtODBhYy00MzI2LWJiNWItNmNjYjU1ZDBmZjBkZWZiM2JkOWUtNTI4"
+CROWD_EVENTS_MESSAGE_RECIPIENT="user@test.com"
+
 # ------------Variables utilized in mvSense.py-----------------------------------
+TEST_CAMERA_SERIAL="XXXXXXXX"
+
 MQTT_SERVER = "test.mosquitto.org"
 #MQTT_SERVER = "MQTT_IP_DOMAIN"
 MQTT_PORT = 1883
-MQTT_TOPIC = "/merakimv/#"
+#this specifies the camera and zone we are interested in
+MQTT_TOPIC = "/merakimv/"+TEST_CAMERA_SERIAL+"/0"
+
 
 # Array of cameras serial numbers
 COLLECT_CAMERAS_SERIAL_NUMBERS = ["*"]
@@ -28,15 +36,6 @@ MOTION_ALERT_PAUSE_TIME = 5
 TIMEOUT = 20
 # number of miliseconds of dwell time to alert on
 MOTION_ALERT_DWELL_TIME = 60000
-
-# -------------Variabbles utilized in cmxreceiver.py------------------
-
-validator = ""
-# rssi value needed to be registered as a "visitor" to be stored in database in cmxreceiver
-_RSSI_THRESHOLD = 15
-
-# Mac address of desired access point
-_APMACADDR="0c:8d:db:6d:e0:6b"
 
 
 # --------Variables utilized in compute.py----------------------
