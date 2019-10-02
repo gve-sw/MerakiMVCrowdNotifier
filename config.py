@@ -3,11 +3,6 @@
 MERAKI_API_KEY = ""
 NETWORK_ID = ""
 
-# ------------ Variables for Webex Teams bot notification -------------------------
-BOT_ACCESS_TOKEN = "XXXXX"
-
-CROWD_EVENTS_MESSAGE_RECIPIENT="test@acme.com"
-
 # ------------Variables utilized in mvSense.py-----------------------------------
 MQTT_SERVER = "test.mosquitto.org"
 #MQTT_SERVER = "MQTT_IP_DOMAIN"
@@ -31,7 +26,8 @@ MOTION_ALERT_TRIGGER_PEOPLE_COUNT = 1
 MOTION_ALERT_PAUSE_TIME = 5
 # number of messages until action time out
 TIMEOUT = 20
-
+# number of miliseconds of dwell time to alert on
+MOTION_ALERT_DWELL_TIME = 60000
 
 # -------------Variabbles utilized in cmxreceiver.py------------------
 
