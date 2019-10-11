@@ -15,7 +15,7 @@ or implied.
 # web application GUI
 
 
-from flask import Flask, render_template, request, jsonify, url_for, json
+from flask import Flask, render_template, request, jsonify, url_for, json, redirect
 import csv
 import shutil
 from datetime import datetime
@@ -27,9 +27,39 @@ from compute import *
 import time
 import pytz    # $ pip install pytz
 import tzlocal # $ pip install tzlocal
+#from flask_wtf import Form
+from flask_wtf import FlaskForm
+from wtforms import StringField
+from wtforms.validators import DataRequired, Email, NumberRange
+import os
+
+
+from mvSense_threaded import *
 
 app = Flask(__name__)
+SECRET_KEY = os.urandom(32)
+app.config['SECRET_KEY'] = SECRET_KEY
 charts = GoogleCharts(app)
+
+class ConfigurationForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    peopleCount = StringField('PeopleCount', validators=[DataRequired()])
+    dwellTime = StringField('DwellTime', validators=[DataRequired()] )
+
+
+@app.route('/start_mvsense')
+def startMVSense():
+    #global theMVSenseThread
+    #theMVSenseThread.start()
+    mvSenseThreadStart()
+    return 'ok'
+
+@app.route('/stop_mvsense')
+def stopMVSense():
+    #global theMVSenseThread
+    #theMVSenseThread.stop()
+    mvSenseThreadStop()
+    return 'ok'
 
 @app.route('/mvSense',methods=['GET','POST'])
 def mvSense():
@@ -50,10 +80,26 @@ def mvSense():
     return render_template("mvSense.html",data=data, numPersons=MOTION_ALERT_PEOPLE_COUNT_THRESHOLD, numSeconds=int(MOTION_ALERT_DWELL_TIME/1000))
 
 
-@app.route('/',methods=['GET'])
-def index():
+@app.route('/pleasewait',methods=['GET'])
+def pleasewait():
     # this is for the GET to show the overview
     return render_template("pleasewait.html", theReason='Getting crowd events for cameras on network: ' + NETWORK_ID)
+
+
+
+@app.route('/',methods=['GET','POST'])
+@app.route('/index',methods=['GET','POST'])
+def index():
+    # this is for the GET to show the overview
+    form = ConfigurationForm()
+    if form.validate_on_submit():
+        #copy the values from the form into variables
+        CROWD_EVENTS_MESSAGE_RECIPIENT=form.email.data
+        MOTION_ALERT_PEOPLE_COUNT_THRESHOLD=form.peopleCount.data
+        MOTION_ALERT_DWELL_TIME=form.dwellTime.data
+        print("set email:", CROWD_EVENTS_MESSAGE_RECIPIENT, " PeopleCount: ",MOTION_ALERT_PEOPLE_COUNT_THRESHOLD," and dwellTime: ",MOTION_ALERT_DWELL_TIME)
+        return render_template("index.html", form=form)
+    return render_template("index.html", form=form)
 
 
 @app.route('/mvOverview',methods=['GET','POST'])

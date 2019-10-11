@@ -83,6 +83,9 @@
                             <h1><a href='https://account.meraki.com/secure/login/dashboard_login' target="_blank">Crowd events</a></h1>
                             <h2>At least {{ numPersons }} people for more than {{ numSeconds }} seconds.</h2>
                         </div>
+                        <div align="right">
+                            <button onclick="exportTableToCSV('clientInfo.csv')">Export To CSV</button>
+                        </div>
                       <table>
                         <thead>
                           <tr bgcolor="#7EF5FA" align="center">
