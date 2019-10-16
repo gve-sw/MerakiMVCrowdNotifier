@@ -89,6 +89,8 @@
                       <table>
                         <thead>
                           <tr bgcolor="#7EF5FA" align="center">
+                              <th>Camera</th>
+                              <th>Zone</th>
                             <th>Total People</th>
                               <th>Timestamp</th>
                             <th>Video Link</th>
@@ -97,6 +99,8 @@
                         <tbody>
                           {% for x in data %}
                           <tr>
+                              <td>{{ x['Camera'] }}</td>
+                              <td>{{ x['Zone'] }}</td>
                             <td>{{ x['count'] }}</td>
                               <td>{{ x['timeIn']}}</td>
                             <td><a href="{{ x['link'] }}" target="_blank">Video clip</a></td>

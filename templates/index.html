@@ -92,9 +92,9 @@
                                     <form action="{{ url_for('index') }}" method="post">
                                         {{ form.email.label }}: {{ form.email(placeholder='yourname@email.com') }}
                                         <br>
-                                        {{ form.peopleCount.label }}: {{ form.peopleCount }}
+                                        {{ form.peopleCount.label }}: {{ form.peopleCount(placeholder='2') }} persons.
                                         <br>
-                                        {{ form.dwellTime.label }}: {{ form.dwellTime }}
+                                        {{ form.dwellTime.label }}: {{ form.dwellTime(placeholder='60000') }} milliseconds.
                                         <br>
                                         {{ form.csrf_token }}
                                         <p><input type=submit value='Set Value' class='btn btn-info'>
