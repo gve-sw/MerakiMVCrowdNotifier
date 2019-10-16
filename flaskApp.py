@@ -35,7 +35,7 @@ import os
 
 import time
 import paho.mqtt.client as mqtt
-from config import MQTT_SERVER,MQTT_PORT,MQTT_TOPIC,MERAKI_API_KEY,NETWORK_ID,COLLECT_CAMERAS_SERIAL_NUMBERS,COLLECT_ZONE_IDS,MOTION_ALERT_ITERATE_COUNT,MOTION_ALERT_TRIGGER_PEOPLE_COUNT,MOTION_ALERT_PAUSE_TIME,TIMEOUT
+from config import MQTT_SERVER,MQTT_PORT,MERAKI_API_KEY,NETWORK_ID,MOTION_ALERT_ITERATE_COUNT,MOTION_ALERT_TRIGGER_PEOPLE_COUNT,MOTION_ALERT_PAUSE_TIME,TIMEOUT
 from config import BOT_ACCESS_TOKEN
 from webexteamssdk import WebexTeamsAPI
 
@@ -66,7 +66,53 @@ _TIMEOUT_COUNT = 0
 
 _TEST_TRIG_START=0
 
+ALL_CAMERAS_AND_ZONES={}
+MQTT_TOPICS = []
+
+
 client = mqtt.Client()
+
+
+def load_all_cameras_details():
+    global ALL_CAMERAS_AND_ZONES
+    global MQTT_TOPICS
+    devices_data = getDevices()
+    if devices_data != 'link error':
+        AllDevices = json.loads(devices_data)
+
+        for theDevice in AllDevices:
+            theModel = theDevice["model"]
+            if theModel[:4] not in COLLECT_CAMERAS_MVSENSE_CAPABLE:
+                continue
+
+            #create dict entry in ALL_CAMERAS_AND_ZONES for this camera, just the top level values for now
+            ALL_CAMERAS_AND_ZONES[theDevice["serial"]]={'name': theDevice["name"],
+                                                        'zones': {}}
+            zonesdetaildata = getMVZones(theDevice["serial"])
+            if zonesdetaildata == 'link error':
+                continue
+            #print("getMVZones returned:", zonesdetaildata)
+            MVZonesDetails = json.loads(zonesdetaildata)
+
+            #now fill out the zones and corresponding details
+            theZoneDetailsDict={}
+            for zoneDetails in  MVZonesDetails:
+                #we are not interested in cameras that have no zones defined, so we do not pull the details into the dict and
+                #we do not add it to the MQTT_TOPICS to monitor
+                if zoneDetails["zoneId"]!='0':
+                    theZoneDetailsDict[zoneDetails["zoneId"]]={'label':zoneDetails["label"],
+                                                               '_MONITORING_TRIGGERED': False,
+                                                               '_MONITORING_MESSAGE_COUNT':0,
+                                                               '_MONITORING_PEOPLE_TOTAL_COUNT':0,
+                                                               '_TIMESTAMP':0,
+                                                               '_TIMEOUT_COUNT':0,
+                                                               '_TEST_TRIG_START':0}
+                    MQTT_TOPICS.append("/merakimv/" + theDevice["serial"] + "/" + zoneDetails["zoneId"])
+            ALL_CAMERAS_AND_ZONES[theDevice["serial"]]['zones'] = theZoneDetailsDict
+
+        print("All cameras and zones info: ", ALL_CAMERAS_AND_ZONES)
+        print("MQTT Topics: ",MQTT_TOPICS)
+
 
 def collect_zone_information(topic, payload):
     ## /merakimv/Q2GV-S7PZ-FGBK/123
@@ -74,13 +120,10 @@ def collect_zone_information(topic, payload):
     parameters = topic.split("/")
     serial_number = parameters[2]
     zone_id = parameters[3]
-    index = len([i for i, x in enumerate(COLLECT_ZONE_IDS) if x == zone_id])
-    # if not wildcard or not in the zone_id list or equal to 0 (whole camera)
-    if COLLECT_ZONE_IDS[0] != "*":
-        if index == 0 or zone_id == "0":
-            return
+
 
     # detect motion
+    global ALL_CAMERAS_AND_ZONES
 
     global _MONITORING_TRIGGERED, _MONITORING_MESSAGE_COUNT, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, TIMEOUT, _TIMEOUT_COUNT, _TEST_TRIG_START
 
@@ -160,7 +203,7 @@ def collect_zone_information(topic, payload):
             print(theMessage)
 
             print('---MESSAGE ALERT---' + serial_number, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
-            notify(serial_number, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
+            notify(serial_number, zone_id, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
             print('---ALERTED---')
             _TEST_TRIG_START = 0
     else:
@@ -168,38 +211,38 @@ def collect_zone_information(topic, payload):
 
 
 
-def notify(serial_number,count,timestampIN, timestampOUT):
+def notify(serial_number, zone_id, count,timestampIN, timestampOUT):
     with open('mvData.csv','a') as csvfile:
-        fieldnames = ['Time In','Time Out','Count']
+        fieldnames = ['Serial', 'ZoneID', 'Time In','Time Out','Count']
         writer=csv.DictWriter(csvfile,fieldnames=fieldnames)
-        writer.writerow({'Time In':timestampIN,'Time Out':timestampOUT, 'Count':count})
+        writer.writerow({'Serial':serial_number,'ZoneID':zone_id, 'Time In':timestampIN,'Time Out':timestampOUT, 'Count':count})
 
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
 
-    client.subscribe(MQTT_TOPIC)
+    for topic in MQTT_TOPICS:
+        client.subscribe(topic)
 
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
+
     payload = json.loads(msg.payload.decode("utf-8"))
+
     parameters = msg.topic.split("/")
+    #print("received a message: ", payload, " with parameters: ",parameters)
     serial_number = parameters[2]
     message_type = parameters[3]
-    index = len([i for i, x in enumerate(COLLECT_CAMERAS_SERIAL_NUMBERS) if x == serial_number])
+    #print("received a message type: ",message_type," serial: ",serial_number," index: ", index)
 
 
-    # filter camera
-    if COLLECT_CAMERAS_SERIAL_NUMBERS[0] != "*":
-        if index == 0:
-            return
-
-    # if message_type != 'raw_detections' and message_type != 'light':
-    #     print(message_type)
-    #     collect_zone_information(msg.topic, payload)
-    if message_type == '0':
-        collect_zone_information(msg.topic,payload)
+    if message_type != 'raw_detections' and message_type != 'light':
+        print(message_type)
+        collect_zone_information(msg.topic, payload)
+    #if message_type == '0':
+    #    collect_zone_information(msg.topic,payload)
+    #    print("processing msg with topic: ", msg.topic)
 
 
 def mvSenseThreadStart():
@@ -254,10 +297,12 @@ def mvSense():
         flag=0
         for row in reader:
             print(row['Time In'])
-            link = getMVLink(TEST_CAMERA_SERIAL,row['Time In'])
+            #link = getMVLink(TEST_CAMERA_SERIAL,row['Time In'])
+            link = getMVLink(row['Serial'],row['Time In'])
             link = link.replace('{"url":"',"")
             link = link.replace('"}',"")
-            data.append({'timeIn':datetime.fromtimestamp(float(row['Time In'])/1000).strftime('%m-%d,%H:%M'),'timeOut':datetime.fromtimestamp(float(row['Time Out'])/1000).strftime('%m-%d,%H:%M'),'count':row['Count'],'link':link})
+            #TODO Pass down the name of the camera instead of serial and the name of the zone
+            data.append({'Serial':row['Serial'],'ZoneID':row['ZoneID'],'timeIn':datetime.fromtimestamp(float(row['Time In'])/1000).strftime('%m-%d,%H:%M'),'timeOut':datetime.fromtimestamp(float(row['Time Out'])/1000).strftime('%m-%d,%H:%M'),'count':row['Count'],'link':link})
     # print(len(data[0]['timestamps']))
     return render_template("mvSense.html",data=data, numPersons=MOTION_ALERT_PEOPLE_COUNT_THRESHOLD, numSeconds=int(MOTION_ALERT_DWELL_TIME/1000))
 
@@ -502,4 +547,5 @@ def mvOverview():
 
 
 if __name__ == "__main__":
+    load_all_cameras_details()
     app.run(host='0.0.0.0', port=5001, debug=True)
