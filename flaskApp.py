@@ -53,19 +53,6 @@ charts = GoogleCharts(app)
 
 webexApi = WebexTeamsAPI(access_token=BOT_ACCESS_TOKEN)
 
-
-_MONITORING_TRIGGERED = False
-
-_MONITORING_MESSAGE_COUNT = 0
-
-_MONITORING_PEOPLE_TOTAL_COUNT = 0
-
-_TIMESTAMP = 0
-
-_TIMEOUT_COUNT = 0
-
-_TEST_TRIG_START=0
-
 ALL_CAMERAS_AND_ZONES={}
 MQTT_TOPICS = []
 
@@ -121,30 +108,28 @@ def collect_zone_information(topic, payload):
     serial_number = parameters[2]
     zone_id = parameters[3]
 
-
     # detect motion
     global ALL_CAMERAS_AND_ZONES
 
-    global _MONITORING_TRIGGERED, _MONITORING_MESSAGE_COUNT, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, TIMEOUT, _TIMEOUT_COUNT, _TEST_TRIG_START
 
     # if motion monitoring triggered
-    if _MONITORING_TRIGGERED:
+    if ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_TRIGGERED']:
 
-        _MONITORING_MESSAGE_COUNT = _MONITORING_MESSAGE_COUNT + 1
+        ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_MESSAGE_COUNT'] = ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_MESSAGE_COUNT'] + 1
 
-        if _MONITORING_PEOPLE_TOTAL_COUNT < payload['counts']['person']:
-            _MONITORING_PEOPLE_TOTAL_COUNT = payload['counts']['person']
+        if ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'] < payload['counts']['person']:
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'] = payload['counts']['person']
 
         if payload['counts']['person'] > 0:
-            _TIMEOUT_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] = 0
         elif payload['counts']['person'] == 0:
-            _TIMEOUT_COUNT = _TIMEOUT_COUNT + 1
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] = ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] + 1
 
 # Enough time has elapsed without action and the minimum number of Motion messages have been received to qualify for successful action
-        if _TIMEOUT_COUNT >= TIMEOUT and _MONITORING_MESSAGE_COUNT >= MOTION_ALERT_ITERATE_COUNT:
+        if ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] >= TIMEOUT and ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_MESSAGE_COUNT'] >= MOTION_ALERT_ITERATE_COUNT:
 
 # Minimum people count reached
-            if _MONITORING_PEOPLE_TOTAL_COUNT >= MOTION_ALERT_TRIGGER_PEOPLE_COUNT:
+            if ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'] >= MOTION_ALERT_TRIGGER_PEOPLE_COUNT:
                 # notification
                 #print('---MESSAGE ALERT---' + serial_number, _MONITORING_PEOPLE_TOTAL_COUNT,_TIMESTAMP,payload['ts'])
                 #notify(serial_number, _MONITORING_PEOPLE_TOTAL_COUNT,_TIMESTAMP, payload['ts'])
@@ -153,69 +138,70 @@ def collect_zone_information(topic, payload):
                 time.sleep(MOTION_ALERT_PAUSE_TIME)
 
             # reset
-            _MONITORING_MESSAGE_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_MESSAGE_COUNT'] = 0
 
-            _MONITORING_PEOPLE_TOTAL_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'] = 0
 
-            _MONITORING_TRIGGERED = False
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_TRIGGERED'] = False
 
-            _TIMESTAMP = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'] = 0
 
-            _TIMEOUT_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] = 0
 
         # not a registered action
-        elif _TIMEOUT_COUNT >= TIMEOUT and _MONITORING_MESSAGE_COUNT < MOTION_ALERT_ITERATE_COUNT:
+        elif ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] >= TIMEOUT and ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_MESSAGE_COUNT'] < MOTION_ALERT_ITERATE_COUNT:
             # reset
             print('---ALERT DISMISSED---')
-            _MONITORING_MESSAGE_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_MESSAGE_COUNT'] = 0
 
-            _MONITORING_PEOPLE_TOTAL_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'] = 0
 
-            _MONITORING_TRIGGERED = False
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_TRIGGERED'] = False
 
             _TIMESTAMP = 0
 
-            _TIMEOUT_COUNT = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMEOUT_COUNT'] = 0
 
 
     # print(payload['counts']['person'])
     if payload['counts']['person'] >= MOTION_ALERT_PEOPLE_COUNT_THRESHOLD:
-        _MONITORING_TRIGGERED = True
-        _TIMESTAMP = payload['ts']
+        ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_TRIGGERED'] = True
+        ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'] = payload['ts']
 
     #print("payload "+serial_number+": " + str(payload) +
     #      ", _MONITORING_TRIGGERED : " + str(_MONITORING_TRIGGERED) +
     #      ", _MONITORING_MESSAGE_COUNT : " + str(_MONITORING_MESSAGE_COUNT) +
     #      ", _MONITORING_PEOPLE_TOTAL_COUNT : " + str(_MONITORING_PEOPLE_TOTAL_COUNT)+
     #      ", timeout: "+str(_TIMEOUT_COUNT))
-    print(_MONITORING_PEOPLE_TOTAL_COUNT,MOTION_ALERT_PEOPLE_COUNT_THRESHOLD)
-    if ( _MONITORING_PEOPLE_TOTAL_COUNT >= MOTION_ALERT_PEOPLE_COUNT_THRESHOLD ):
-        _TIMESTAMP = payload['ts']
-        print("Timestamp: " + str(_TIMESTAMP) + " TrigTimestamp: " + str(_TEST_TRIG_START)+" diff:"+str(_TIMESTAMP - _TEST_TRIG_START))
-        if (_TEST_TRIG_START == 0):
+    print(ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'],MOTION_ALERT_PEOPLE_COUNT_THRESHOLD)
+    if ( ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'] >= MOTION_ALERT_PEOPLE_COUNT_THRESHOLD ):
+        ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'] = payload['ts']
+        print("Timestamp: " + str(ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP']) + " TrigTimestamp: " + str(ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START'])+" diff:"+str(ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'] - ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START']))
+        if (ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START'] == 0):
             # start mesuring a dwelling period
-            _TEST_TRIG_START = payload['ts']
-        if ((_TIMESTAMP - _TEST_TRIG_START) >= MOTION_ALERT_DWELL_TIME):
-            theText=u"At least " + str(MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) + " person(s) detected for more than " + str(int(MOTION_ALERT_DWELL_TIME/1000)) + " seconds on camera "+serial_number+" for zone "+str(zone_id)
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START'] = payload['ts']
+        if ((ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'] - ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START']) >= MOTION_ALERT_DWELL_TIME):
+            theText=u"At least " + str(MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) + " person(s) detected for more than " + str(int(MOTION_ALERT_DWELL_TIME/1000)) + " seconds on camera "+ALL_CAMERAS_AND_ZONES[serial_number]['name']+" for zone "+ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['label']
             print(theText)
             #send message to recipient from Webex Teams bot
             theMessage=webexApi.messages.create(toPersonEmail=CROWD_EVENTS_MESSAGE_RECIPIENT, text=theText)
             print(theMessage)
 
-            print('---MESSAGE ALERT---' + serial_number, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
-            notify(serial_number, zone_id, _MONITORING_PEOPLE_TOTAL_COUNT, _TIMESTAMP, payload['ts'])
+            print('---MESSAGE ALERT---' + serial_number, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
+            #notify(serial_number, zone_id, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
+            notify(ALL_CAMERAS_AND_ZONES[serial_number]['name'], serial_number, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['label'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
             print('---ALERTED---')
-            _TEST_TRIG_START = 0
+            ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START'] = 0
     else:
-        _TEST_TRIG_START = 0
+        ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START'] = 0
 
 
 
-def notify(serial_number, zone_id, count,timestampIN, timestampOUT):
+def notify(camera_name,camera_serial, zone_label, count,timestampIN, timestampOUT):
     with open('mvData.csv','a') as csvfile:
-        fieldnames = ['Serial', 'ZoneID', 'Time In','Time Out','Count']
+        fieldnames = ['Camera','Serial', 'Zone', 'Time In','Time Out','Count']
         writer=csv.DictWriter(csvfile,fieldnames=fieldnames)
-        writer.writerow({'Serial':serial_number,'ZoneID':zone_id, 'Time In':timestampIN,'Time Out':timestampOUT, 'Count':count})
+        writer.writerow({'Camera':camera_name,'Serial':camera_serial,'Zone':zone_label, 'Time In':timestampIN,'Time Out':timestampOUT, 'Count':count})
 
 
 def on_connect(client, userdata, flags, rc):
@@ -301,8 +287,7 @@ def mvSense():
             link = getMVLink(row['Serial'],row['Time In'])
             link = link.replace('{"url":"',"")
             link = link.replace('"}',"")
-            #TODO Pass down the name of the camera instead of serial and the name of the zone
-            data.append({'Serial':row['Serial'],'ZoneID':row['ZoneID'],'timeIn':datetime.fromtimestamp(float(row['Time In'])/1000).strftime('%m-%d,%H:%M'),'timeOut':datetime.fromtimestamp(float(row['Time Out'])/1000).strftime('%m-%d,%H:%M'),'count':row['Count'],'link':link})
+            data.append({'Camera':row['Camera'],'Zone':row['Zone'],'timeIn':datetime.fromtimestamp(float(row['Time In'])/1000).strftime('%m-%d,%H:%M'),'timeOut':datetime.fromtimestamp(float(row['Time Out'])/1000).strftime('%m-%d,%H:%M'),'count':row['Count'],'link':link})
     # print(len(data[0]['timestamps']))
     return render_template("mvSense.html",data=data, numPersons=MOTION_ALERT_PEOPLE_COUNT_THRESHOLD, numSeconds=int(MOTION_ALERT_DWELL_TIME/1000))
 
