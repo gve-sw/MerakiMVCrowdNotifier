@@ -22,7 +22,7 @@ from datetime import datetime
 from flask_googlecharts import GoogleCharts
 from flask_googlecharts import BarChart, MaterialLineChart, ColumnChart
 from flask_googlecharts.utils import prep_data
-from config import COLLECT_CAMERAS_MVSENSE_CAPABLE, NETWORK_ID, TEST_CAMERA_SERIAL
+from config import COLLECT_CAMERAS_MVSENSE_CAPABLE, NETWORK_ID
 from compute import *
 import time
 import pytz    # $ pip install pytz
@@ -35,7 +35,7 @@ import os
 
 import time
 import paho.mqtt.client as mqtt
-from config import MQTT_SERVER,MQTT_PORT,MERAKI_API_KEY,NETWORK_ID,MOTION_ALERT_ITERATE_COUNT,MOTION_ALERT_TRIGGER_PEOPLE_COUNT,MOTION_ALERT_PAUSE_TIME,TIMEOUT
+from config import MQTT_SERVER,MQTT_PORT,MOTION_ALERT_ITERATE_COUNT,MOTION_ALERT_TRIGGER_PEOPLE_COUNT,MOTION_ALERT_PAUSE_TIME,TIMEOUT
 from config import BOT_ACCESS_TOKEN
 from webexteamssdk import WebexTeamsAPI
 

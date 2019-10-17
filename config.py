@@ -4,28 +4,18 @@ MERAKI_API_KEY = ""
 NETWORK_ID = ""
 
 # ------------ Variables for Webex Teams bot notification -------------------------
-BOT_ACCESS_TOKEN = "ZWNiNTcyNWYtODBhYy00MzI2LWJiNWItNmNjYjU1ZDBmZjBkZWZiM2JkOWUtNTI4"
-CROWD_EVENTS_MESSAGE_RECIPIENT="user@test.com"
+BOT_ACCESS_TOKEN = "xxxxx"
 
-# ------------Variables utilized in mvSense.py-----------------------------------
+# ------------Variables utilized in mvSense code-----------------------------------
 TEST_CAMERA_SERIAL="XXXXXXXX"
 
 MQTT_SERVER = "test.mosquitto.org"
 #MQTT_SERVER = "MQTT_IP_DOMAIN"
 MQTT_PORT = 1883
-#this specifies the camera and zone we are interested in
-MQTT_TOPIC = "/merakimv/"+TEST_CAMERA_SERIAL+"/0"
 
-
-# Array of cameras serial numbers
-COLLECT_CAMERAS_SERIAL_NUMBERS = ["*"]
-# Array of zone id, all is *. eg ["*"]
-COLLECT_ZONE_IDS = ["*"]
 # Array of valid cameras with MVSense API
 COLLECT_CAMERAS_MVSENSE_CAPABLE=["MV12", "MV22", "MV72"]
 
-# motion trigger setting
-MOTION_ALERT_PEOPLE_COUNT_THRESHOLD = 1
 # message count to trigger an action
 MOTION_ALERT_ITERATE_COUNT = 50
 # least number of people to send action
@@ -34,8 +24,6 @@ MOTION_ALERT_TRIGGER_PEOPLE_COUNT = 1
 MOTION_ALERT_PAUSE_TIME = 5
 # number of messages until action time out
 TIMEOUT = 20
-# number of miliseconds of dwell time to alert on
-MOTION_ALERT_DWELL_TIME = 60000
 
 
 # --------Variables utilized in compute.py----------------------
