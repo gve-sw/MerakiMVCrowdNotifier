@@ -92,7 +92,7 @@
                                     <form action="{{ url_for('index') }}" method="post">
                                         {{ form.email.label }}: {{ form.email(placeholder='yourname@email.com') }}
                                         <br>
-                                        {{ form.peopleCount.label }}: {{ form.peopleCount(placeholder='2') }} persons.
+                                        {{ form.peopleCount.label }}: {{ form.peopleCount(placeholder='3') }} persons.
                                         <br>
                                         {{ form.dwellTime.label }}: {{ form.dwellTime(placeholder='60000') }} milliseconds.
                                         <br>
@@ -107,6 +107,8 @@
                                 <script type="text/javascript">
                                     $('a#stop_mvsense').hide();
                                 </script>
+                                <br>
+                                <br>
                                 <br>
                                 <br>
                                 <a href="/pleasewait" class="summaries">Events Summary</a>

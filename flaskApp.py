@@ -40,7 +40,7 @@ from config import BOT_ACCESS_TOKEN
 from webexteamssdk import WebexTeamsAPI
 
 
-MOTION_ALERT_PEOPLE_COUNT_THRESHOLD = 2
+MOTION_ALERT_PEOPLE_COUNT_THRESHOLD = 3
 MOTION_ALERT_DWELL_TIME = 60000
 CROWD_EVENTS_MESSAGE_RECIPIENT= ''
 
@@ -181,8 +181,28 @@ def collect_zone_information(topic, payload):
             # start mesuring a dwelling period
             ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START'] = payload['ts']
         if ((ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'] - ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TEST_TRIG_START']) >= MOTION_ALERT_DWELL_TIME):
+            try:
+                theDTts = datetime.utcfromtimestamp(payload['ts'] / 1e3)
+                print("DateTime: ", theDTts)
+                theISOts = theDTts.isoformat() + "Z"
+                print("ISO timestamp: ", theISOts)
+            except Exception as ex:
+                print("Timestamp calc failed due to: \n {0}".format(ex))
+
+            #retrieve the snapshot for that time
+            theScreenShotURL=""
+            screenShotURLdata = getCameraScreenshot(serial_number, theISOts)
+            print("getCameraSCreenshot returned: ", screenShotURLdata)
+            if screenShotURLdata != 'link error':
+                screenShotURL = json.loads(screenShotURLdata)
+                theScreenShotURL=screenShotURL["url"]
+
             theText=u"At least " + str(MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) + " person(s) detected for more than " + str(int(MOTION_ALERT_DWELL_TIME/1000)) + " seconds on camera "+ALL_CAMERAS_AND_ZONES[serial_number]['name']+" for zone "+ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['label']
+            if theScreenShotURL!="":
+                theText=theText+". Screenshot: "+theScreenShotURL
+
             print(theText)
+
             #send message to recipient from Webex Teams bot
             theMessage=webexApi.messages.create(toPersonEmail=CROWD_EVENTS_MESSAGE_RECIPIENT, text=theText)
             print(theMessage)
@@ -283,10 +303,11 @@ def mvSense():
         flag=0
         for row in reader:
             print(row['Time In'])
-            #link = getMVLink(TEST_CAMERA_SERIAL,row['Time In'])
-            link = getMVLink(row['Serial'],row['Time In'])
-            link = link.replace('{"url":"',"")
-            link = link.replace('"}',"")
+
+            #link = getMVLink(row['Serial'],row['Time In'])
+            #link = link.replace('{"url":"',"")
+            #link = link.replace('"}',"")
+            link = "/getsnapshot?serial="+row['Serial']+"&timestamp="+row['Time In']
             data.append({'Camera':row['Camera'],'Zone':row['Zone'],'timeIn':datetime.fromtimestamp(float(row['Time In'])/1000).strftime('%m-%d,%H:%M'),'timeOut':datetime.fromtimestamp(float(row['Time Out'])/1000).strftime('%m-%d,%H:%M'),'count':row['Count'],'link':link})
     # print(len(data[0]['timestamps']))
     return render_template("mvSense.html",data=data, numPersons=MOTION_ALERT_PEOPLE_COUNT_THRESHOLD, numSeconds=int(MOTION_ALERT_DWELL_TIME/1000))
@@ -297,7 +318,35 @@ def pleasewait():
     # this is for the GET to show the overview
     return render_template("pleasewait.html", theReason='Getting crowd events for cameras on network: ' + NETWORK_ID)
 
+@app.route('/getsnapshot',methods=['GET'])
+def getsnapshot():
+    theSerial = request.args['serial']
+    theTimestamp = request.args['timestamp']
+    theISOts=""
+    try:
+        theDTts = datetime.utcfromtimestamp(int(theTimestamp) / 1e3)
+        print("DateTime: ", theDTts)
+        theISOts = theDTts.isoformat() + "Z"
+        print("ISO timestamp: ", theISOts)
+    except Exception as ex:
+        print("Timestamp calc failed due to: \n {0}".format(ex))
 
+    # retrieve the snapshot for that time
+    theScreenShotURL = ""
+    screenShotURLdata = getCameraScreenshot(theSerial, theISOts)
+    print("getCameraSCreenshot returned: ", screenShotURLdata)
+    if screenShotURLdata != 'link error':
+        screenShotURL = json.loads(screenShotURLdata)
+        theScreenShotURL = screenShotURL["url"]
+        wait_time = 7000
+        seconds = wait_time / 1000
+        #return redirect(theScreenShotURL, code=302)
+        return f"<html><body><p>You will be redirected in {seconds} seconds</p><script>var timer = setTimeout(function() {{window.location='{theScreenShotURL}'}}, {wait_time});</script></body></html>"
+    return redirect("/nosnapshot", code=302)
+
+@app.route("/nosnapshot")
+def nosnapshot():
+    return "There is no snapshot!"
 
 @app.route('/',methods=['GET','POST'])
 @app.route('/index',methods=['GET','POST'])
