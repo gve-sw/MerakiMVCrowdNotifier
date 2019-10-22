@@ -32,6 +32,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired, Email, NumberRange
 import os
+from subprocess import Popen
 
 import time
 import paho.mqtt.client as mqtt
@@ -190,22 +191,24 @@ def collect_zone_information(topic, payload):
                 print("Timestamp calc failed due to: \n {0}".format(ex))
 
             #retrieve the snapshot for that time
-            theScreenShotURL=""
-            screenShotURLdata = getCameraScreenshot(serial_number, theISOts)
-            print("getCameraSCreenshot returned: ", screenShotURLdata)
-            if screenShotURLdata != 'link error':
-                screenShotURL = json.loads(screenShotURLdata)
-                theScreenShotURL=screenShotURL["url"]
+            #theScreenShotURL=""
+            #screenShotURLdata = getCameraScreenshot(serial_number, theISOts)
+            #print("getCameraSCreenshot returned: ", screenShotURLdata)
+            #if screenShotURLdata != 'link error':
+            #    screenShotURL = json.loads(screenShotURLdata)
+            #    theScreenShotURL=screenShotURL["url"]
 
             theText=u"At least " + str(MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) + " person(s) detected for more than " + str(int(MOTION_ALERT_DWELL_TIME/1000)) + " seconds on camera "+ALL_CAMERAS_AND_ZONES[serial_number]['name']+" for zone "+ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['label']
-            if theScreenShotURL!="":
-                theText=theText+". Screenshot: "+theScreenShotURL
+            #if theScreenShotURL!="":
+            #    theText=theText+". Screenshot: "+theScreenShotURL
 
-            print(theText)
+            print("Text from Flask app: ",theText)
 
             #send message to recipient from Webex Teams bot
-            theMessage=webexApi.messages.create(toPersonEmail=CROWD_EVENTS_MESSAGE_RECIPIENT, text=theText)
-            print(theMessage)
+            #theMessage=webexApi.messages.create(toPersonEmail=CROWD_EVENTS_MESSAGE_RECIPIENT, text=theText)
+            #print(theMessage)
+
+            Popen(f'python3 send.py {theText} {CROWD_EVENTS_MESSAGE_RECIPIENT} {serial_number} {theISOts}', shell=True)
 
             print('---MESSAGE ALERT---' + serial_number, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
             #notify(serial_number, zone_id, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
