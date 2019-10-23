@@ -190,25 +190,14 @@ def collect_zone_information(topic, payload):
             except Exception as ex:
                 print("Timestamp calc failed due to: \n {0}".format(ex))
 
-            #retrieve the snapshot for that time
-            #theScreenShotURL=""
-            #screenShotURLdata = getCameraScreenshot(serial_number, theISOts)
-            #print("getCameraSCreenshot returned: ", screenShotURLdata)
-            #if screenShotURLdata != 'link error':
-            #    screenShotURL = json.loads(screenShotURLdata)
-            #    theScreenShotURL=screenShotURL["url"]
-
             theText=u"At least " + str(MOTION_ALERT_PEOPLE_COUNT_THRESHOLD) + " person(s) detected for more than " + str(int(MOTION_ALERT_DWELL_TIME/1000)) + " seconds on camera "+ALL_CAMERAS_AND_ZONES[serial_number]['name']+" for zone "+ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['label']
-            #if theScreenShotURL!="":
-            #    theText=theText+". Screenshot: "+theScreenShotURL
 
             print("Text from Flask app: ",theText)
 
-            #send message to recipient from Webex Teams bot
-            #theMessage=webexApi.messages.create(toPersonEmail=CROWD_EVENTS_MESSAGE_RECIPIENT, text=theText)
-            #print(theMessage)
-
-            Popen(f'python3 send.py {theText} {CROWD_EVENTS_MESSAGE_RECIPIENT} {serial_number} {theISOts}', shell=True)
+            # spin off separate process to retrieve screenshot and send to Teams recipient. This can take a few
+            # seconds, especiall when waiting for the snapshot URL to return a valid image
+            # so we do not want it to block the main code doing all the detecting
+            Popen(f'python3 send.py "{theText}" {CROWD_EVENTS_MESSAGE_RECIPIENT} {serial_number} {theISOts}', shell=True)
 
             print('---MESSAGE ALERT---' + serial_number, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
             #notify(serial_number, zone_id, ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_MONITORING_PEOPLE_TOTAL_COUNT'], ALL_CAMERAS_AND_ZONES[serial_number]['zones'][zone_id]['_TIMESTAMP'], payload['ts'])
@@ -360,7 +349,7 @@ def index():
         #copy the values from the form into variables
         CROWD_EVENTS_MESSAGE_RECIPIENT=form.email.data
         MOTION_ALERT_PEOPLE_COUNT_THRESHOLD=int(form.peopleCount.data)
-        MOTION_ALERT_DWELL_TIME=int(form.dwellTime.data)
+        MOTION_ALERT_DWELL_TIME=int(form.dwellTime.data)*1000
         print("set email:", CROWD_EVENTS_MESSAGE_RECIPIENT, " PeopleCount: ",MOTION_ALERT_PEOPLE_COUNT_THRESHOLD," and dwellTime: ",MOTION_ALERT_DWELL_TIME)
         return render_template("index.html", form=form)
     return render_template("index.html", form=form)

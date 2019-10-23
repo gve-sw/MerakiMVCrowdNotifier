@@ -1,9 +1,51 @@
+"""
+Copyright (c) 2019 Cisco and/or its affiliates.
+This software is licensed to you under the terms of the Cisco Sample
+Code License, Version 1.1 (the "License"). You may obtain a copy of the
+License at
+               https://developer.cisco.com/docs/licenses
+All use of the material herein must be in accordance with the terms of
+the License. All rights not expressly granted by the License are
+reserved. Unless required by applicable law or agreed to separately in
+writing, software distributed under the License is distributed on an "AS
+IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+or implied.
+"""
 from config import BOT_ACCESS_TOKEN
-from webexteamssdk import WebexTeamsAPI
 from compute import *
 import sys, json
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
+# Generate a snapshot of what the camera sees at the specified time and return a link to that image.
+# https://api.meraki.com/api_docs#generate-a-snapshot-of-what-the-camera-sees-at-the-specified-time-and-return-a-link-to-that-image
+def generate_snapshot(serial, timestamp=None, session=None):
+    headers = {'X-Cisco-Meraki-API-Key': MERAKI_API_KEY, 'Content-Type': 'application/json'}
+
+    print("Serial: ", serial)
+    print("Timestamp: ", timestamp)
+
+    if not session:
+        session = requests.Session()
+
+    if timestamp:
+        response = session.post(
+            f'https://api.meraki.com/api/v0/networks/{NETWORK_ID}/cameras/{serial}/snapshot',
+            headers=headers,
+            json={'timestamp': timestamp}
+        )
+    else:
+        response = session.post(
+            f'https://api.meraki.com/api/v0/networks/{NETWORK_ID}/cameras/{serial}/snapshot',
+            headers=headers
+        )
+    print(response)
+    print("Response status code: ",response.status_code)
+    print("Response text: ",response.text)
+    if response.ok:
+        snapshot_link = response.json()['url']
+        return snapshot_link
+    else:
+        return None
 
 # Download file from URL and write to local tmp storage
 def download_file(session, file_name, file_url):
@@ -52,8 +94,6 @@ if __name__ == '__main__':
     serial_number = sys.argv[3]
     timestamp = sys.argv[4]
 
-    webexApi = WebexTeamsAPI(access_token=BOT_ACCESS_TOKEN)
-
     # Establish session
     session = requests.Session()
 
@@ -68,20 +108,16 @@ if __name__ == '__main__':
 
     # retrieve the snapshot for that time
     theScreenShotURL = ""
-    screenShotURLdata = getCameraScreenshot(serial_number, timestamp)
-    print("getCameraSCreenshot returned: ", screenShotURLdata)
-    if screenShotURLdata != 'link error':
-        screenShotURL = json.loads(screenShotURLdata)
-        theScreenShotURL = screenShotURL["url"]
 
-    if theScreenShotURL != "":
-        theText = theText + ". Screenshot: " + theScreenShotURL
+    # Generating screenshot for latest time since when I selected a timestamp that was too close
+    # to real time the camera had not had a chance to store it and make it available for sending
+    print("About to generate snapshot with serial ",serial_number,' and session ',session)
+    theScreenShotURL=generate_snapshot(serial_number, None, session)
+
+    print("theScreenShotURL=",theScreenShotURL)
 
     print(theText)
 
-    # send message to recipient from Webex Teams bot
-    #theMessage = webexApi.messages.create(toPersonEmail=destination_email, text=theText)
-    #print(theMessage)
 
     file_url=theScreenShotURL
     if file_url:  # download/GET image from URL
