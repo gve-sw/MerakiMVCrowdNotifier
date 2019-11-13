@@ -6,7 +6,7 @@ it sends a message via Webex Teams to a user configurable recipient and resets a
 
 It also implements web page that lists the crowd notification events with a URL to the video clip of when the crowds where detected.
 
-![This is what the main user interface and notifications sent by Webex Teams look like:](Screen Shot Crowd Notifier.png)
+![This is what the main user interface and notifications sent by Webex Teams look like:](ScreenShotCrowdApp.png)
 
 
 ## Configuration
