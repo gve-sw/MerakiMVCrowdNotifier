@@ -42,14 +42,16 @@ Please note that the actual email address of the Webex Teams recipient,  "Dwell 
 
 ---
 ### MV Sense Camera Setup  
-Leverage Meraki new camera API and MQTT capability to create a notification service. When the camera detects a person consistently appears in a particular zone the service will send a Webex team message to a Webex team room with a video link which will directly go to the video footage when that even occurred. This is useful for alerting unexpected person movement in off-hours. Here is more information on MV sense data: https://developer.cisco.com/meraki/build/mv-sense-documentation/
+This sample application leverages the  Meraki MV camera API and MQTT capability to create a notification service.
+
+
+More information on MV Sense can be found here: https://developer.cisco.com/meraki/build/mv-sense-documentation/
 
 ---
-## MQTT and setting
+## MV Sense confguration and setting up MQTT
 
 1. In the Meraki dashboard, go to **Cameras > [Camera Name] > Settings > Sense** page.
 2. Click **Add or edit MQTT Brokers > New MQTT Broker** and add you broker information. For testing/trial you can find public broker at [here](https://github.com/mqtt/mqtt.github.io/wiki/public_brokers).
-3. You can install [MQTT.fx](https://mqttfx.jensd.de/) to subscribe to MQTT broker. This is a very useful tool
 
 
 ---
