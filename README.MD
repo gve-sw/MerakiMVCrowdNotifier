@@ -9,7 +9,7 @@ It also implements web page that lists the crowd notification events with a URL 
 ![This is what the main user interface and notifications sent by Webex Teams look like:](ScreenShotCrowdApp.png)
 
 
-## Configuration
+### Configuration
 
 The **Config.py** contains all of the global variables and configuration needed throughout the code, including keys and thresholds:
 
@@ -55,7 +55,7 @@ More information on MV Sense can be found here: https://developer.cisco.com/mera
 
 
 ---
-## Running the Code 
+### Running the Code 
 1. Make sure Python 3 is installed
 2. Make sure pip is installed (https://pip.pypa.io/en/stable/installing/ for more information on pip)
 3. Enter 'pip install -r requirements.txt' into command line to download necessary libraries
