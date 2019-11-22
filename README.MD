@@ -48,7 +48,7 @@ This sample application leverages the  Meraki MV camera API and MQTT capability 
 More information on MV Sense can be found here: https://developer.cisco.com/meraki/build/mv-sense-documentation/
 
 ---
-## MV Sense confguration and setting up MQTT
+### MV Sense confguration and setting up MQTT
 
 1. In the Meraki dashboard, go to **Cameras > [Camera Name] > Settings > Sense** page.
 2. Click **Add or edit MQTT Brokers > New MQTT Broker** and add you broker information. For testing/trial you can find public broker at [here](https://github.com/mqtt/mqtt.github.io/wiki/public_brokers).
