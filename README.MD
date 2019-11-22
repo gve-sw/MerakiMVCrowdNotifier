@@ -9,7 +9,7 @@ It also implements web page that lists the crowd notification events with a URL 
 ![This is what the main user interface and notifications sent by Webex Teams look like:](ScreenShotCrowdApp.png)
 
 
-### Configuration
+## Configuration
 
 The **Config.py** contains all of the global variables and configuration needed throughout the code, including keys and thresholds:
 
@@ -41,21 +41,21 @@ Please note that the actual email address of the Webex Teams recipient,  "Dwell 
 
 
 ---
-### MV Sense Camera Setup  
+## MV Sense Camera Setup  
 This sample application leverages the  Meraki MV camera API and MQTT capability to create a notification service.
 
 
 More information on MV Sense can be found here: https://developer.cisco.com/meraki/build/mv-sense-documentation/
 
 ---
-### MV Sense confguration and setting up MQTT
+## MV Sense confguration and setting up MQTT
 
 1. In the Meraki dashboard, go to **Cameras > [Camera Name] > Settings > Sense** page.
 2. Click **Add or edit MQTT Brokers > New MQTT Broker** and add you broker information. For testing/trial you can find public broker at [here](https://github.com/mqtt/mqtt.github.io/wiki/public_brokers).
 
 
 ---
-### Running the Code 
+## Running the Code 
 1. Make sure Python 3 is installed
 2. Make sure pip is installed (https://pip.pypa.io/en/stable/installing/ for more information on pip)
 3. Enter 'pip install -r requirements.txt' into command line to download necessary libraries
