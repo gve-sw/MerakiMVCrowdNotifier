@@ -74,7 +74,11 @@ def load_all_cameras_details():
                 continue
 
             #create dict entry in ALL_CAMERAS_AND_ZONES for this camera, just the top level values for now
-            ALL_CAMERAS_AND_ZONES[theDevice["serial"]]={'name': theDevice["name"],
+            if "name" in theDevice.keys():
+                theDeviceName = theDevice["name"]
+            else:
+                theDeviceName = "Camera "+theDevice["serial"]
+            ALL_CAMERAS_AND_ZONES[theDevice["serial"]]={'name': theDeviceName,
                                                         'zones': {}}
             zonesdetaildata = getMVZones(theDevice["serial"])
             if zonesdetaildata == 'link error':
@@ -221,6 +225,7 @@ def on_connect(client, userdata, flags, rc):
 
     for topic in MQTT_TOPICS:
         client.subscribe(topic)
+
 
 
 # The callback for when a PUBLISH message is received from the server.
