@@ -1,4 +1,4 @@
-requests==2.20.1
+requests==2.31.0
 pytz==2018.5
 Flask_GoogleCharts==0.1.0
 Flask==1.0.2
